@@ -1,6 +1,8 @@
-Apk builds of [piko](https://github.com/crimera/piko) patches
+Forked from [crimera/twitter-apk](https://github.com/crimera/twitter-apk)
 
-[Latest Build Download](https://github.com/crimera/twitter-apk/releases/latest)
+Apk builds of [piko](https://github.com/crimera/piko) patched Instagram
+
+[Latest Build Download](https://github.com/ObjShadow/instagram-apk/releases/latest)
 
 # Credits
 - [morphe](https://github.com/MorpheApp) - patcher
