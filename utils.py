@@ -1,5 +1,4 @@
 import os
-import shutil
 import subprocess
 import sys
 
@@ -104,12 +103,6 @@ def run_command(command: list[str]):
         exit(1)
 
 
-def merge_apk(path: str):
-    subprocess.run(
-        ["java", "-jar", "./bins/apkeditor.jar", "m", "-extractNativeLibs", "true", "-i", path]
-    ).check_returncode()
-
-
 def patch_apk(
     cli: str,
     patches: str,
@@ -148,16 +141,14 @@ def patch_apk(
             command.append("-d")
             command.append(e)
 
-    command.append(apk)
+    if out is not None:
+        command.extend(["--out", out])
 
+    command.append(apk)
     subprocess.run(command).check_returncode()
 
-    # remove -patched from the apk to match out
-    if out is not None:
-        cli_output = f"{str(apk).removesuffix(".apk")}-patched.apk"
-        if os.path.exists(out):
-            os.unlink(out)
-        shutil.move(cli_output, out)
+    if out is not None and not os.path.exists(out):
+        raise FileNotFoundError(f"Morphe did not create the expected output: {out}")
 
 
 def publish_release(tag: str, files: list[str], message: str, title = ""):

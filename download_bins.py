@@ -49,11 +49,6 @@ def download_release_asset(
     return latest_release
 
 
-def download_apkeditor():
-    print("Downloading apkeditor")
-    download_release_asset("REAndroid/APKEditor", "APKEditor", "bins", "apkeditor.jar")
-
-
 def download_morphe_cli(include_prereleases: bool = False):
     print("Downloading morphe cli")
     download_release_asset(

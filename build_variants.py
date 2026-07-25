@@ -4,7 +4,7 @@ from utils import patch_apk
 
 def build_apks(latest_version: Version):
     # patch
-    apk = "big_file_merged.apk"
+    apk = "big_file.apkm"
     patches = "bins/patches.mpp"
     cli = "bins/morphe-cli.jar"
 

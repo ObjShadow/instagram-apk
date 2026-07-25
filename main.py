@@ -1,8 +1,8 @@
 from apkmirror import Version, Variant
 from build_variants import build_apks
-from download_bins import download_apkeditor, download_morphe_cli, download_release_asset
+from download_bins import download_morphe_cli, download_release_asset
 import github
-from utils import panic, merge_apk, publish_release, report_to_telegram
+from utils import panic, publish_release, report_to_telegram
 from constants import REPO
 import apkmirror
 import os
@@ -18,32 +18,22 @@ def get_latest_release(versions: list[Version]) -> Version | None:
 def process(latest_version: Version):
     variants: list[Variant] = apkmirror.get_variants(latest_version)
 
-    download_link: Variant | None = None
-    for variant in variants:
-        if variant.is_bundle and variant.architecture == "universal":
-            download_link = variant
-            break
-
+    download_link = next(
+        (
+            variant
+            for variant in variants
+            if variant.is_bundle and variant.architecture == "universal"
+        ),
+        None,
+    )
     if download_link is None:
-        bundle_variants = [v for v in variants if v.is_bundle]
-        if not bundle_variants:
-            raise Exception("Bundle not Found")
-
-        fallback = next((v for v in bundle_variants if v.architecture == "arm64-v8a"), None)
-        download_link = fallback or bundle_variants[0]
-        print(f"Universal bundle not found, falling back to {download_link.architecture}")
+        raise Exception("Universal bundle not found")
 
     apkmirror.download_apk(download_link)
     if not os.path.exists("big_file.apkm"):
-        panic("Failed to download apk")
+        panic("Failed to download apkm")
 
-    download_apkeditor()
-
-    if not os.path.exists("big_file_merged.apk"):
-        merge_apk("big_file.apkm")
-    else:
-        print("apkm is already merged")
-
+    # Morphe handles .apkm bundles directly; no APKEditor merge is needed.
     download_morphe_cli(include_prereleases=True)
 
     print("Downloading patches")
