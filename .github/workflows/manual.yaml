@@ -20,7 +20,7 @@ jobs:
       - name: Set up java
         uses: actions/setup-java@v4
         with:
-          distribution: 'zulu' # See 'Supported distributions' for available options
+          distribution: 'zulu'
           java-version: '21'
 
       - name: Install uv
