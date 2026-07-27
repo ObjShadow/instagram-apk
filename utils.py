@@ -115,12 +115,21 @@ def flaresolverr_request(
     if result.get("status") != "ok":
         raise RuntimeError(f"FlareSolverr failed: {result.get('message', 'Unknown error')}")
     
+    # Check if solution exists and contains required fields
+    solution = result.get("solution")
+    if solution is None:
+        raise RuntimeError(f"FlareSolverr returned no solution: {result}")
+    
+    status_code = solution.get("status")
+    if status_code is None:
+        raise RuntimeError(f"FlareSolverr solution missing status: {solution}")
+    
     # Create a fake Response object from FlareSolverr result
     fake_response = requests.Response()
-    fake_response.status_code = result["solution"]["statusCode"]
-    fake_response._content = result["solution"]["response"].encode("utf-8") if isinstance(result["solution"]["response"], str) else result["solution"]["response"]
+    fake_response.status_code = status_code
+    fake_response._content = solution["response"].encode("utf-8") if isinstance(solution["response"], str) else solution["response"]
     fake_response.url = url
-    fake_response.headers.update(result["solution"].get("headers", {}))
+    fake_response.headers.update(solution.get("headers", {}))
     
     return fake_response
 
