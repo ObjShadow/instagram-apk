@@ -14,6 +14,12 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
+    services:
+      flaresolverr:
+        image: ghcr.io/flaresolverr/flaresolverr:latest
+        ports:
+          - 8191:8191
+
     steps:
       - uses: actions/checkout@v4
 
@@ -32,12 +38,25 @@ jobs:
       - name: Install dependencies
         run: uv sync --frozen
 
+      - name: Wait for FlareSolverr to be ready
+        run: |
+          for i in {1..30}; do
+            if curl -s http://localhost:8191/health > /dev/null; then
+              echo "FlareSolverr is ready"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "FlareSolverr did not become ready in time"
+          exit 1
+
       - name: Try building
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TG_TOKEN: ${{ secrets.TG_TOKEN }}
           TG_CHAT_ID: ${{ secrets.TG_CHAT_ID }}
           TG_THREAD_ID: ${{ secrets.TG_THREAD_ID }}
+          FLARESOLVERR_URL: http://localhost:8191
         run: |
           mkdir -p bins
           uv run main.py --m 1 --v ${{ github.event.inputs.version_input }}
