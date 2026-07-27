@@ -206,11 +206,19 @@ def download(link, out, headers=None, use_scraper=False, session=None):
         response.raise_for_status()
         
         # Check if we got HTML instead of binary content (indicates wrong URL or redirect needed)
-        if response.content.startswith(b'<!DOCTYPE') or response.content.startswith(b'<html'):
+        content = response.content
+        if len(content) == 0:
+            raise RuntimeError(f"Downloaded empty file from URL: {link}. FlareSolverr final URL: {response.url}")
+        
+        if content.startswith(b'<!DOCTYPE') or content.startswith(b'<html') or content.startswith(b'<HTML'):
             raise RuntimeError(f"Downloaded HTML instead of APK file. Got URL: {link}. FlareSolverr final URL: {response.url}")
         
+        # Check for common HTML patterns that might indicate an error page
+        if b'<html' in content[:1024] or b'<!doctype' in content[:1024]:
+            raise RuntimeError(f"Downloaded HTML content instead of APK. URL: {link}. Final URL: {response.url}")
+        
         with open(out, "wb") as f:
-            f.write(response.content)
+            f.write(content)
     else:
         session_requests = requests.Session()
         # https://www.slingacademy.com/article/python-requests-module-how-to-download-files-from-urls/#Streaming_Large_Files
