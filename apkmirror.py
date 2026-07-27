@@ -94,6 +94,9 @@ def download_apk(variant: Variant, path: str = "big_file.apkm", session: FlareSo
         raise FailedToFindElement("download link")
 
     direct_link_href = cast(Tag, direct_link).attrs["href"]
+    # Remove leading slash to avoid double slashes when combining with base URL
+    if direct_link_href.startswith("/"):
+        direct_link_href = direct_link_href[1:]
     direct_link_url = f"https://www.apkmirror.com/{direct_link_href}"
     print(f"Direct link: {direct_link_url}")
 
