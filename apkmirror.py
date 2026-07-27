@@ -100,6 +100,8 @@ def download_apk(variant: Variant, path: str = "big_file.apkm", session: FlareSo
     direct_link_url = f"https://www.apkmirror.com/{direct_link_href}"
     print(f"Direct link: {direct_link_url}")
 
+    # Download the APK file directly using FlareSolverr
+    # Note: We use the session to maintain cookies across requests
     download(
         direct_link_url,
         path,
@@ -107,6 +109,20 @@ def download_apk(variant: Variant, path: str = "big_file.apkm", session: FlareSo
         headers={"Referer": download_page_link},
         session=session,
     )
+    
+    # Verify the downloaded file is valid
+    if os.path.exists(path):
+        file_size = os.path.getsize(path)
+        if file_size < 1024:  # Less than 1KB is suspicious
+            raise RuntimeError(f"Downloaded file {path} is too small ({file_size} bytes), likely not a valid APK")
+        # Check for ZIP magic bytes (APK files are ZIP archives)
+        with open(path, "rb") as f:
+            magic = f.read(4)
+            if magic != b'PK\x03\x04':
+                raise RuntimeError(f"Downloaded file {path} does not have valid APK/ZIP magic bytes. Got: {magic.hex()}")
+        print(f"Downloaded {path} successfully ({file_size} bytes)")
+    else:
+        raise RuntimeError(f"Failed to download {path}")
 
 
 def get_variants(version: Version, session: FlareSolverrSession) -> list[Variant]:

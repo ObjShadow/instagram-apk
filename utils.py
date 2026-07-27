@@ -74,7 +74,8 @@ def flaresolverr_request(
     method: str = "GET", 
     headers: Optional[dict] = None, 
     data: Optional[dict] = None,
-    session: Optional[FlareSolverrSession] = None
+    session: Optional[FlareSolverrSession] = None,
+    return_cookies: bool = False
 ) -> requests.Response:
     """
     Make a request through FlareSolverr to bypass Cloudflare protection.
@@ -85,6 +86,7 @@ def flaresolverr_request(
         headers: Optional headers to send
         data: Optional data for POST requests
         session: Optional FlareSolverrSession for cookie reuse
+        return_cookies: If True, return cookies from the solution for use in subsequent requests
     
     Returns:
         requests.Response object with the response
@@ -130,6 +132,10 @@ def flaresolverr_request(
     fake_response._content = solution["response"].encode("utf-8") if isinstance(solution["response"], str) else solution["response"]
     fake_response.url = url
     fake_response.headers.update(solution.get("headers", {}))
+    
+    # Store cookies for potential reuse
+    if return_cookies and "cookies" in solution:
+        fake_response.cookies = solution["cookies"]
     
     return fake_response
 
@@ -195,9 +201,14 @@ def download(link, out, headers=None, use_scraper=False, session=None):
 
     if use_scraper:
         print(f"Downloading with FlareSolverr: {link}")
-        # Use FlareSolverr to get the URL that bypasses Cloudflare
+        # Use FlareSolverr to bypass Cloudflare and get the actual file content
         response = flaresolverr_request(link, method="GET", headers=headers, session=session)
         response.raise_for_status()
+        
+        # Check if we got HTML instead of binary content (indicates wrong URL or redirect needed)
+        if response.content.startswith(b'<!DOCTYPE') or response.content.startswith(b'<html'):
+            raise RuntimeError(f"Downloaded HTML instead of APK file. Got URL: {link}. FlareSolverr final URL: {response.url}")
+        
         with open(out, "wb") as f:
             f.write(response.content)
     else:
