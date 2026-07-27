@@ -100,7 +100,7 @@ def download_apk(variant: Variant, path: str = "big_file.apkm", session: FlareSo
     download(
         direct_link_url,
         path,
-        use_scraper=True,
+        use_scraper=False,
         headers={"Referer": download_page_link},
         session=session,
     )

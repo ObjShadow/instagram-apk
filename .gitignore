@@ -63,3 +63,6 @@ wheels/
 ehthumbs.db
 Thumbs.db
 ```
+
+test.py
+.direnv
