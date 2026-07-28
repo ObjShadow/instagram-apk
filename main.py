@@ -51,8 +51,8 @@ Changelogs:
         if not os.path.exists(apk_filename):
             panic(f'Failed to download {apk_filename}')
 
-        build_apk(apk_filename, f"instagram-piko-v{latest_version.version}-{architecture}.apk")
-        patched_apks.append(f"instagram-piko-v{latest_version.version}-{architecture}.apk")
+        build_apk(apk_filename, f"output/instagram-piko-v{latest_version.version}-{architecture}.apk")
+        patched_apks.append(f"output/instagram-piko-v{latest_version.version}-{architecture}.apk")
 
     publish_release(
         latest_version.version,

@@ -8,7 +8,9 @@ on:
         required: true
 
 permissions:
-  contents: write
+  id-token: write
+  attestations: write
+  artifact-metadata: write
 
 jobs:
   build:
@@ -62,5 +64,10 @@ jobs:
           TG_THREAD_ID: ${{ secrets.TG_THREAD_ID }}
           FLARESOLVERR_URL: http://localhost:8191
         run: |
-          mkdir -p bins
+          mkdir -p bins && mkdir -p output
           uv run main.py --m 1 --v ${{ github.event.inputs.version_input }}
+
+      - name: Generate Attestations
+        uses: actions/attest@v4.2.0
+        with:
+          subject-path: './output/*.apk'
