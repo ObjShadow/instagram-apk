@@ -8,6 +8,7 @@ from build_variants import build_apk
 from constants import ARCHITECTURES, REPO
 from download_bins import download_morphe_cli, download_release_asset
 from utils import FlareSolverrSession, panic, publish_release, report_to_telegram
+from subprocess import CalledProcessError
 
 
 def get_latest_release(versions: list[Version]) -> Version | None:
@@ -44,15 +45,19 @@ Changelogs:
             None,
         )
         if download_link is None:
-            raise Exception(f'{architecture} bundle not found')
+            print(f'{architecture} bundle not found')
+            continue
 
         apk_filename = f'big_file_{architecture}.apkm'
         apkmirror.download_apk(download_link, apk_filename, session=session)
         if not os.path.exists(apk_filename):
             panic(f'Failed to download {apk_filename}')
-
-        build_apk(apk_filename, f"output/instagram-piko-v{latest_version.version}-{architecture}.apk")
-        patched_apks.append(f"output/instagram-piko-v{latest_version.version}-{architecture}.apk")
+        try:
+            build_apk(apk_filename, f"output/instagram-piko-v{latest_version.version}-{architecture}.apk")
+            patched_apks.append(f"output/instagram-piko-v{latest_version.version}-{architecture}.apk")
+        except CalledProcessError as e:
+            print(f"Failed to build output/instagram-piko-v{latest_version.version}-{architecture}.apk:\n{e}")
+            continue
 
     publish_release(
         latest_version.version,
