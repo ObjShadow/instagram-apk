@@ -1,7 +1,9 @@
 from dataclasses import dataclass
 from typing import cast
+
 from bs4 import BeautifulSoup, Tag
-from utils import download, get_scraper
+
+from utils import FlareSolverrSession, download, flaresolverr_request
 
 
 @dataclass
@@ -26,20 +28,20 @@ class App:
 class FailedToFindElement(Exception):
     def __init__(self, message=None) -> None:
         self.message = (
-            f"Failed to find element{' ' + message if message is not None else ''}"  # noqa: E501
+            f"Failed to find element{' ' + message if message is not None else ''}"
         )
         super().__init__(self.message)
 
 
 class FailedToFetch(Exception):
     def __init__(self, url=None) -> None:
-        self.message = f"Failed to fetch{' ' + url if url is not None else ''}"  # noqa: E501
+        self.message = f"Failed to fetch{' ' + url if url is not None else ''}"
         super().__init__(self.message)
 
 
-def get_versions(url: str) -> list[Version]:
+def get_versions(url: str, session: FlareSolverrSession) -> list[Version]:
     """Get the latest version of the app from the given apkmirror url"""
-    response = get_scraper().get(url)
+    response = flaresolverr_request(url, session=session)
     if response.status_code != 200:
         raise FailedToFetch(f"{url}: {response.status_code}")
 
@@ -64,11 +66,11 @@ def get_versions(url: str) -> list[Version]:
     return out
 
 
-def download_apk(variant: Variant, path: str = "big_file.apkm"):
+def download_apk(variant: Variant, path: str = "big_file.apkm", session: FlareSolverrSession = None):
     """Download apk from the variant link"""
     url = variant.link
 
-    response = get_scraper().get(url)
+    response = flaresolverr_request(url, session=session)
 
     if response.status_code != 200:
         raise FailedToFetch(url)
@@ -83,8 +85,12 @@ def download_apk(variant: Variant, path: str = "big_file.apkm"):
         f"https://www.apkmirror.com/{cast(Tag, downloadButton).attrs['href']}"
     )
 
-    download_page = get_scraper().get(download_page_link)
-    if response.status_code != 200:
+    download_page = flaresolverr_request(
+        download_page_link,
+        session=session,
+        return_cookies=True
+    )
+    if download_page.status_code != 200:
         raise FailedToFetch(download_page_link)
 
     download_page_body = BeautifulSoup(download_page.content, "html.parser")
@@ -100,14 +106,17 @@ def download_apk(variant: Variant, path: str = "big_file.apkm"):
     download(
         direct_link_url,
         path,
-        use_scraper=True,
-        headers={"Referer": download_page_link},
+        headers={
+            "Referer": download_page_link,
+            "User-Agent": download_page.headers.get("User-Agent")
+        },
+        cookies=download_page.cookies
     )
 
 
-def get_variants(version: Version) -> list[Variant]:
+def get_variants(version: Version, session: FlareSolverrSession) -> list[Variant]:
     url = version.link
-    variants_page = get_scraper().get(url)
+    variants_page = flaresolverr_request(url, session=session)
     if variants_page is None:
         raise FailedToFetch(url)
 
