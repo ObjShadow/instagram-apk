@@ -1,14 +1,17 @@
 import argparse
 import os
+import re
+from subprocess import CalledProcessError
+
+import requests
 
 import apkmirror
 import github
 from apkmirror import Variant, Version
 from build_variants import build_apk
-from constants import ARCHITECTURES, REPO
+from constants import ARCHITECTURES, PIKO_REPO, REPO
 from download_bins import download_morphe_cli, download_release_asset
 from utils import FlareSolverrSession, panic, publish_release, report_to_telegram
-from subprocess import CalledProcessError
 
 
 def get_latest_release(versions: list[Version]) -> Version | None:
@@ -70,37 +73,53 @@ Changelogs:
 
 
 def main():
-    # get latest version
-    url: str = "https://www.apkmirror.com/apk/instagram/instagram-instagram/"
     repo_url: str = REPO
+    piko_repo: str = PIKO_REPO
+    latest_support_version = None
+
+    url = f"https://api.github.com/repos/{piko_repo}/releases"
+
+    response = requests.get(url)
+    if response.status_code != 200:
+        panic("Failed to fetch github")
+
+    releases = response.json()
+
+    if not releases:
+        panic(f"No releases found for {piko_repo}")
+
+    for release in releases:
+        match = re.search(r"\*\*Instagram:\*\* Add support for `([0-9.]+)`", release["body"])
+        if match:
+            version = match.group(1)
+            link = f'https://www.apkmirror.com/apk/instagram/instagram-instagram/instagram-{version.replace(".","-")}-release/'
+            latest_support_version = Version(
+                link=link,
+                version=version
+            )
+            break
+
+    if latest_support_version is None:
+        panic(f"No releases with support App version found for {piko_repo}")
+        return
+
+    last_build_version: github.GithubRelease | None = github.get_last_build_version(
+        repo_url
+    )
+
+    if last_build_version is None:
+        panic("Failed to fetch the latest build version")
+        return
+
+    # Begin stuff
+    if last_build_version.tag_name != latest_support_version.version:
+        print(f"New version found: {latest_support_version.version}")
+    else:
+        print("No new version found")
+        return
 
     with FlareSolverrSession() as session:
-        versions = apkmirror.get_versions(url, session=session)
-
-        latest_version = get_latest_release(versions)
-        if latest_version is None:
-            raise Exception("Could not find the latest version")
-
-        # only continue if it's a release
-        if latest_version.version.find("release") < 0:
-            panic("Latest version is not a release version")
-
-        last_build_version: github.GithubRelease | None = github.get_last_build_version(
-            repo_url
-        )
-
-        if last_build_version is None:
-            panic("Failed to fetch the latest build version")
-            return
-
-        # Begin stuff
-        if last_build_version.tag_name != latest_version.version:
-            print(f"New version found: {latest_version.version}")
-        else:
-            print("No new version found")
-            return
-
-        process(latest_version, session=session)
+        process(latest_support_version, session=session)
 
 
 def manual(version:str):
@@ -125,5 +144,5 @@ if __name__ == "__main__":
     else: # manual
         version = args.version
         if not version:
-            raise Exception("Version is required.")
+            panic("Version is required.")
         manual(version)

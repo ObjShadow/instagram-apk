@@ -5,6 +5,8 @@ if REPO is None:
     REPO = ""
     raise EnvironmentError("GITHUB_REPOSITORY is not set")
 
+PIKO_REPO = "crimera/piko"
+
 HEADERS = {
     "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
     "accept-language": "en-GB,en;q=0.9",
