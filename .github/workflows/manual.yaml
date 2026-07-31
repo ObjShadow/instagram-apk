@@ -58,6 +58,7 @@ jobs:
           exit 1
 
       - name: Try building
+        id: try_building
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TG_TOKEN: ${{ secrets.TG_TOKEN }}
@@ -69,6 +70,7 @@ jobs:
           uv run main.py --m 1 --v ${{ github.event.inputs.version_input }}
 
       - name: Generate Attestations
+        if: steps.try_building.outputs.has_output == 'true'
         uses: actions/attest@v4.2.0
         with:
           subject-path: './output/*.apk'

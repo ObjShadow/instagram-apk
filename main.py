@@ -1,7 +1,7 @@
 import argparse
 import os
 import re
-from subprocess import CalledProcessError
+import subprocess
 
 import requests
 
@@ -58,9 +58,13 @@ Changelogs:
         try:
             build_apk(apk_filename, f"output/instagram-piko-v{latest_version.version}-{architecture}.apk")
             patched_apks.append(f"output/instagram-piko-v{latest_version.version}-{architecture}.apk")
-        except CalledProcessError as e:
+        except subprocess.CalledProcessError as e:
             print(f"Failed to build output/instagram-piko-v{latest_version.version}-{architecture}.apk:\n{e}")
             continue
+
+    if len(patched_apks) == 0:
+        panic("Failed to build at all, no artifacts have been built")
+        return
 
     publish_release(
         latest_version.version,
@@ -68,6 +72,11 @@ Changelogs:
         message,
         latest_version.version
     )
+
+    github_output= os.environ.get("GITHUB_OUTPUT")
+    if github_output:
+        with open(github_output, "a") as f:
+            f.write("has_output=true\n")
 
     report_to_telegram(tag=latest_version.version)
 
