@@ -97,16 +97,21 @@ def main():
     if not releases:
         panic(f"No releases found for {piko_repo}")
 
-    for release in releases:
-        match = re.search(r"\*\*Instagram:\*\* Add support for `([0-9.]+)`", release["body"])
-        if match:
-            version = match.group(1)
-            link = f'https://www.apkmirror.com/apk/instagram/instagram-instagram/instagram-{version.replace(".","-")}-release/'
-            latest_support_version = Version(
-                link=link,
-                version=version
+    latest_support_version = next(
+        (
+            Version(
+                link=f'https://www.apkmirror.com/apk/instagram/instagram-instagram/instagram-{match.group(1).replace(".", "-")}-release/',
+                version=match.group(1),
             )
-            break
+            for release in releases
+            for match in (
+                re.search(r"\*\*Instagram:\*\* Add support for `([0-9.]+)`", release["body"]),
+                re.search(r"\*\*Instagram:\*\* Add support for ([0-9.]+)", release["body"]),
+            )
+            if match
+        ),
+        None,
+    )
 
     if latest_support_version is None:
         panic(f"No releases with support App version found for {piko_repo}")
